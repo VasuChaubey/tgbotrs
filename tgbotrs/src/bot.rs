@@ -9,10 +9,11 @@ const DEFAULT_API_URL: &str = "https://api.telegram.org";
 /// # Example
 /// ```rust,no_run
 /// # use tgbotrs::Bot;
-/// # tokio_test::block_on(async {
+/// # #[tokio::main]
+/// # async fn main() {
 /// let bot = Bot::new("YOUR_TOKEN").await.unwrap();
 /// println!("Running as @{}", bot.me.username.as_deref().unwrap_or(""));
-/// # });
+/// # }
 /// ```
 #[derive(Debug, Clone)]
 pub struct Bot {
