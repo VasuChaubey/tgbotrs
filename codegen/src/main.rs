@@ -83,14 +83,8 @@ fn tg_to_rust(s: &str, optional: bool, types_map: &HashMap<String, TgType>) -> S
     };
     // If it's a complex TG type (struct) and optional, box it
     if optional {
-        let is_tg_struct = types_map
-            .get(s)
-            .map(|t| t.subtypes.is_empty() && !t.fields.is_empty())
-            .unwrap_or(false);
-        let is_tg_union = types_map
-            .get(s)
-            .map(|t| !t.subtypes.is_empty())
-            .unwrap_or(false);
+        let is_tg_struct = types_map.get(s).map(|t| t.subtypes.is_empty() && !t.fields.is_empty()).unwrap_or(false);
+        let is_tg_union = types_map.get(s).map(|t| !t.subtypes.is_empty()).unwrap_or(false);
         if is_tg_struct || is_tg_union {
             return format!("Option<Box<{}>>", base);
         }
@@ -143,6 +137,7 @@ fn field_rust_type(field: &Field, types_map: &HashMap<String, TgType>) -> String
     }
 }
 
+
 fn rust_field_name(name: &str) -> String {
     // Some names conflict with Rust keywords
     match name {
@@ -157,9 +152,11 @@ fn method_fn_name(name: &str) -> String {
     name.to_snake_case()
 }
 
+
 fn method_params_name(name: &str) -> String {
     format!("{}Params", name.to_pascal_case())
 }
+
 
 // Types implemented manually in the library — skip generating them to avoid duplicates.
 // Keep in sync with SKIP_TYPES in codegen/codegen.py and HAND_CRAFTED_TYPES in
@@ -183,19 +180,13 @@ fn generate_types(spec: &ApiSpec) -> String {
     writeln!(out, "// https://core.telegram.org/bots/api").unwrap();
     writeln!(out).unwrap();
     writeln!(out, "use serde::{{Deserialize, Serialize}};").unwrap();
-    writeln!(
-        out,
-        "use crate::{{ChatId, InputFile, InputFileOrString, ReplyMarkup}};"
-    )
-    .unwrap();
+    writeln!(out, "use crate::{{ChatId, InputFile, InputFileOrString, ReplyMarkup}};").unwrap();
     writeln!(out).unwrap();
 
     let types_map = &spec.types;
 
     for type_name_str in sorted_keys(types_map) {
-        if SKIP_TYPES.contains(&type_name_str.as_str()) {
-            continue;
-        }
+        if SKIP_TYPES.contains(&type_name_str.as_str()) { continue; }
         let tg_type = &types_map[&type_name_str];
         let docs = tg_type.description.join("\n/// ");
 
@@ -203,11 +194,7 @@ fn generate_types(spec: &ApiSpec) -> String {
             // Union type → Rust enum
             writeln!(out, "/// {}", docs).unwrap();
             writeln!(out, "/// See: {}", tg_type.href).unwrap();
-            writeln!(
-                out,
-                "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]"
-            )
-            .unwrap();
+            writeln!(out, "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]").unwrap();
             writeln!(out, "#[serde(untagged)]").unwrap();
             writeln!(out, "pub enum {} {{", type_name_str).unwrap();
             for variant in &tg_type.subtypes {
@@ -219,22 +206,14 @@ fn generate_types(spec: &ApiSpec) -> String {
             // Empty struct (marker type)
             writeln!(out, "/// {}", docs).unwrap();
             writeln!(out, "/// See: {}", tg_type.href).unwrap();
-            writeln!(
-                out,
-                "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]"
-            )
-            .unwrap();
+            writeln!(out, "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]").unwrap();
             writeln!(out, "pub struct {} {{}}", type_name_str).unwrap();
             writeln!(out).unwrap();
         } else {
             // Regular struct
             writeln!(out, "/// {}", docs).unwrap();
             writeln!(out, "/// See: {}", tg_type.href).unwrap();
-            writeln!(
-                out,
-                "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]"
-            )
-            .unwrap();
+            writeln!(out, "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]").unwrap();
             writeln!(out, "pub struct {} {{", type_name_str).unwrap();
 
             for field in &tg_type.fields {
@@ -248,11 +227,7 @@ fn generate_types(spec: &ApiSpec) -> String {
                 }
                 // skip_serializing_if for optional fields
                 if rust_type.starts_with("Option<") {
-                    writeln!(
-                        out,
-                        "    #[serde(skip_serializing_if = \"Option::is_none\")]"
-                    )
-                    .unwrap();
+                    writeln!(out, "    #[serde(skip_serializing_if = \"Option::is_none\")]").unwrap();
                 }
                 writeln!(out, "    pub {}: {},", fname, rust_type).unwrap();
             }
@@ -271,11 +246,7 @@ fn generate_methods(spec: &ApiSpec) -> String {
     writeln!(out, "// Generated from Telegram Bot API {}", spec.version).unwrap();
     writeln!(out).unwrap();
     writeln!(out, "use serde::{{Deserialize, Serialize}};").unwrap();
-    writeln!(
-        out,
-        "use crate::{{Bot, BotError, ChatId, InputFile, InputFileOrString, ReplyMarkup}};"
-    )
-    .unwrap();
+    writeln!(out, "use crate::{{Bot, BotError, ChatId, InputFile, InputFileOrString, ReplyMarkup}};").unwrap();
     writeln!(out, "use crate::types::*;").unwrap();
     writeln!(out).unwrap();
 
@@ -293,11 +264,7 @@ fn generate_methods(spec: &ApiSpec) -> String {
         // Generate the params struct (optional fields)
         if !optional_fields.is_empty() {
             writeln!(out, "/// Optional parameters for [`Bot::{}`]", fn_name).unwrap();
-            writeln!(
-                out,
-                "#[derive(Debug, Clone, Serialize, Deserialize, Default)]"
-            )
-            .unwrap();
+            writeln!(out, "#[derive(Debug, Clone, Serialize, Deserialize, Default)]").unwrap();
             writeln!(out, "pub struct {} {{", params_name).unwrap();
             for field in &optional_fields {
                 let rust_type = field_rust_type(field, types_map);
@@ -307,11 +274,7 @@ fn generate_methods(spec: &ApiSpec) -> String {
                 if fname.starts_with("r#") || fname != field.name {
                     writeln!(out, "    #[serde(rename = \"{}\")]", field.name).unwrap();
                 }
-                writeln!(
-                    out,
-                    "    #[serde(skip_serializing_if = \"Option::is_none\")]"
-                )
-                .unwrap();
+                writeln!(out, "    #[serde(skip_serializing_if = \"Option::is_none\")]").unwrap();
                 // Optional fields in params struct are always Option
                 let opt_type = if rust_type.starts_with("Option<") {
                     rust_type.clone()
@@ -446,7 +409,10 @@ fn main() {
     let json = std::fs::read_to_string(spec_path).expect("Could not read api.json");
     let spec: ApiSpec = serde_json::from_str(&json).expect("Could not parse api.json");
 
-    println!("Telegram Bot API {} ({})", spec.version, spec.release_date);
+    println!(
+        "Telegram Bot API {} ({})",
+        spec.version, spec.release_date
+    );
     println!(
         "Found {} types and {} methods",
         spec.types.len(),
