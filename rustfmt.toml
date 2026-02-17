@@ -1,0 +1,8 @@
+# Ignore auto-generated files — these should not be reformatted by hand.
+# This replaces the use of #![rustfmt::skip] as an inner attribute in
+# non-root modules, which requires the unstable `custom_inner_attributes`
+# feature and therefore breaks compilation on stable and beta toolchains.
+ignore = [
+    "tgbotrs/src/gen_types.rs",
+    "tgbotrs/src/gen_methods.rs",
+]
