@@ -9,6 +9,7 @@
 #![allow(clippy::all, dead_code, unused_imports)]
 
 use serde::{Deserialize, Serialize};
+#[rustfmt::skip]
 use crate::{ChatId, InputFile, InputFileOrString, ReplyMarkup, InputMedia};
 
 /// This object describes the types of gifts that can be gifted to a user or a chat.

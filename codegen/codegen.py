@@ -176,6 +176,7 @@ def generate_types(spec):
     lines.append(f'#![allow(clippy::all, dead_code, unused_imports)]')
     lines.append(f'')
     lines.append(f'use serde::{{Deserialize, Serialize}};')
+    lines.append(f'#[rustfmt::skip]')
     lines.append(f'use crate::{{ChatId, InputFile, InputFileOrString, ReplyMarkup, InputMedia}};')
     lines.append(f'')
 
@@ -253,6 +254,7 @@ def generate_methods(spec):
     lines.append(f'')
     lines.append(f'use serde::{{Deserialize, Serialize}};')
     lines.append(f'use crate::types::*;')
+    lines.append(f'#[rustfmt::skip]')
     lines.append(f'use crate::{{Bot, BotError, ChatId, InputFile, InputFileOrString, ReplyMarkup, InputMedia}};')
     lines.append(f'')
 
