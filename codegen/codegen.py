@@ -420,7 +420,7 @@ def main():
     # This ensures the validate-generated-code CI check never diffs on formatting.
     import subprocess
     for fname in ['gen_types.rs', 'gen_methods.rs']:
-        subprocess.run(['rustfmt', f'{out_dir}/{fname}'], check=True)
+        subprocess.run(['rustfmt', '--edition', '2021', f'{out_dir}/{fname}'], check=True)
 
     print('Done ✅')
 
