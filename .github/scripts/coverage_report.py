@@ -64,14 +64,22 @@ for name, info in all_types.items():
 
 # -------------------------------------------------
 # Method coverage
-# Telegram methods are implemented as REQUEST STRUCTS
-# e.g. sendMessage -> pub struct SendMessage
+# Telegram methods are implemented as async Bot methods
+# e.g. sendMessage -> pub async fn send_message
 # -------------------------------------------------
-for name in all_methods:
-    struct_name = name[0].upper() + name[1:]
-    pattern = f"pub struct {struct_name}"
+import re as _re
 
-    if pattern in methods_src:
+def _snake_case(name: str) -> str:
+    s = _re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', name)
+    s = _re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s)
+    return s.lower()
+
+# Collect all generated async fn names once for O(1) lookup
+_gen_fns = set(_re.findall(r'pub async fn (\w+)', methods_src))
+
+for name in all_methods:
+    fn_name = _snake_case(name)
+    if fn_name in _gen_fns:
         implemented_methods.append(name)
     else:
         missing_methods.append(name)
