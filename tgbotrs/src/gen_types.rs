@@ -6,7 +6,7 @@
 // License: MIT
 // See:     https://core.telegram.org/bots/api
 
-#![allow(clippy::all, dead_code)]
+#![allow(clippy::all, dead_code, unused_imports)]
 
 use serde::{Deserialize, Serialize};
 use crate::{ChatId, InputFile, InputFileOrString, ReplyMarkup, InputMedia};

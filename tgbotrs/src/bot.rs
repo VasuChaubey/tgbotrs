@@ -1,5 +1,5 @@
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use crate::{BotError, types::User};
 
 const DEFAULT_API_URL: &str = "https://api.telegram.org";

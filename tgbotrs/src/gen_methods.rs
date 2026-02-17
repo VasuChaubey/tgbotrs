@@ -6,7 +6,7 @@
 // License: MIT
 // See:     https://core.telegram.org/bots/api
 
-#![allow(clippy::all, dead_code, unused_variables)]
+#![allow(clippy::all, dead_code, unused_imports, unused_mut)]
 
 use serde::{Deserialize, Serialize};
 use crate::types::*;

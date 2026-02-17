@@ -1,6 +1,6 @@
 use heck::{ToPascalCase, ToSnakeCase};
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use serde::Deserialize;
+use std::collections::HashMap;
 use std::fmt::Write;
 
 // ─────────────────────────────────────────────────
@@ -16,6 +16,7 @@ struct ApiSpec {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct TgType {
     name: String,
     description: Vec<String>,
@@ -136,10 +137,6 @@ fn field_rust_type(field: &Field, types_map: &HashMap<String, TgType>) -> String
     }
 }
 
-/// Returns the serde rename attribute for a field, plus snake_case name.
-fn field_name(name: &str) -> String {
-    name.to_snake_case()
-}
 
 fn rust_field_name(name: &str) -> String {
     // Some names conflict with Rust keywords
@@ -155,13 +152,16 @@ fn method_fn_name(name: &str) -> String {
     name.to_snake_case()
 }
 
-fn type_name(name: &str) -> String {
-    name.to_string() // TG types are already PascalCase
-}
 
 fn method_params_name(name: &str) -> String {
     format!("{}Params", name.to_pascal_case())
 }
+
+
+// Types implemented manually in the library — skip generating them to avoid duplicates.
+// Keep in sync with SKIP_TYPES in codegen/codegen.py and HAND_CRAFTED_TYPES in
+// .github/scripts/validate_generated.py
+const SKIP_TYPES: &[&str] = &["InputFile", "InputMedia"];
 
 fn sorted_keys<V>(map: &HashMap<String, V>) -> Vec<String> {
     let mut keys: Vec<_> = map.keys().cloned().collect();
@@ -178,14 +178,15 @@ fn generate_types(spec: &ApiSpec) -> String {
     writeln!(out, "// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.").unwrap();
     writeln!(out, "// Generated from Telegram Bot API {}", spec.version).unwrap();
     writeln!(out, "// https://core.telegram.org/bots/api").unwrap();
-    writeln!(out, "").unwrap();
+    writeln!(out).unwrap();
     writeln!(out, "use serde::{{Deserialize, Serialize}};").unwrap();
     writeln!(out, "use crate::{{ChatId, InputFile, InputFileOrString, ReplyMarkup}};").unwrap();
-    writeln!(out, "").unwrap();
+    writeln!(out).unwrap();
 
     let types_map = &spec.types;
 
     for type_name_str in sorted_keys(types_map) {
+        if SKIP_TYPES.contains(&type_name_str.as_str()) { continue; }
         let tg_type = &types_map[&type_name_str];
         let docs = tg_type.description.join("\n/// ");
 
@@ -200,14 +201,14 @@ fn generate_types(spec: &ApiSpec) -> String {
                 writeln!(out, "    {}({}),", variant, variant).unwrap();
             }
             writeln!(out, "}}").unwrap();
-            writeln!(out, "").unwrap();
+            writeln!(out).unwrap();
         } else if tg_type.fields.is_empty() {
             // Empty struct (marker type)
             writeln!(out, "/// {}", docs).unwrap();
             writeln!(out, "/// See: {}", tg_type.href).unwrap();
             writeln!(out, "#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]").unwrap();
             writeln!(out, "pub struct {} {{}}", type_name_str).unwrap();
-            writeln!(out, "").unwrap();
+            writeln!(out).unwrap();
         } else {
             // Regular struct
             writeln!(out, "/// {}", docs).unwrap();
@@ -232,7 +233,7 @@ fn generate_types(spec: &ApiSpec) -> String {
             }
 
             writeln!(out, "}}").unwrap();
-            writeln!(out, "").unwrap();
+            writeln!(out).unwrap();
         }
     }
 
@@ -243,11 +244,11 @@ fn generate_methods(spec: &ApiSpec) -> String {
     let mut out = String::new();
     writeln!(out, "// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.").unwrap();
     writeln!(out, "// Generated from Telegram Bot API {}", spec.version).unwrap();
-    writeln!(out, "").unwrap();
+    writeln!(out).unwrap();
     writeln!(out, "use serde::{{Deserialize, Serialize}};").unwrap();
     writeln!(out, "use crate::{{Bot, BotError, ChatId, InputFile, InputFileOrString, ReplyMarkup}};").unwrap();
     writeln!(out, "use crate::types::*;").unwrap();
-    writeln!(out, "").unwrap();
+    writeln!(out).unwrap();
 
     let types_map = &spec.types;
 
@@ -283,7 +284,7 @@ fn generate_methods(spec: &ApiSpec) -> String {
                 writeln!(out, "    pub {}: {},", fname, opt_type).unwrap();
             }
             writeln!(out, "}}").unwrap();
-            writeln!(out, "").unwrap();
+            writeln!(out).unwrap();
         }
 
         // Return type
@@ -311,7 +312,7 @@ fn generate_methods(spec: &ApiSpec) -> String {
 
         let has_opts = !optional_fields.is_empty();
 
-        write!(out, "impl Bot {{\n").unwrap();
+        writeln!(out, "impl Bot {{").unwrap();
         writeln!(out, "    /// {}", docs).unwrap();
         writeln!(out, "    /// See: {}", method.href).unwrap();
 
@@ -377,7 +378,7 @@ fn generate_methods(spec: &ApiSpec) -> String {
         .unwrap();
         writeln!(out, "    }}").unwrap();
         writeln!(out, "}}").unwrap();
-        writeln!(out, "").unwrap();
+        writeln!(out).unwrap();
     }
 
     out
