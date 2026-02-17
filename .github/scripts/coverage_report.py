@@ -6,7 +6,6 @@ from pathlib import Path
 
 # -------------------------------------------------
 # Telegram abstract / conceptual types
-# These are NOT real structs or enums in libraries
 # -------------------------------------------------
 IGNORED_TYPES = {
     "InputFile",
@@ -46,7 +45,7 @@ missing_methods = []
 # Type coverage
 # -------------------------------------------------
 for name, info in all_types.items():
-    # Skip Telegram abstract types
+    # Skip abstract Telegram types
     if name in IGNORED_TYPES:
         implemented_types.append(name)
         continue
@@ -65,9 +64,13 @@ for name, info in all_types.items():
 
 # -------------------------------------------------
 # Method coverage
+# Telegram methods are implemented as REQUEST STRUCTS
+# e.g. sendMessage -> pub struct SendMessage
 # -------------------------------------------------
 for name in all_methods:
-    pattern = f"fn {name}("
+    struct_name = name[0].upper() + name[1:]
+    pattern = f"pub struct {struct_name}"
+
     if pattern in methods_src:
         implemented_methods.append(name)
     else:
@@ -100,7 +103,7 @@ if missing_methods:
     print(" ", missing_methods)
 
 # -------------------------------------------------
-# Strict CI failure (correct & intentional)
+# Strict CI enforcement
 # -------------------------------------------------
 if missing_types or missing_methods:
     sys.exit(1)
