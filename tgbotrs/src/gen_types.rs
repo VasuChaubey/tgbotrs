@@ -5,6 +5,7 @@
 // Author:  Ankit Chaubey <ankitchaubey.dev@gmail.com>
 // License: MIT
 // See:     https://core.telegram.org/bots/api
+#![rustfmt::skip]
 
 #![allow(clippy::all, dead_code, unused_imports)]
 
