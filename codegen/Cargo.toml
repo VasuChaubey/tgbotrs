@@ -1,0 +1,15 @@
+[package]
+name = "codegen"
+version = "0.1.0"
+edition = "2021"
+description = "Code generator for tgbotrs - generates Rust code from the Telegram Bot API spec"
+
+[[bin]]
+name = "codegen"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+heck = "0.5"

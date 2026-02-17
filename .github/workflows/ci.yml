@@ -1,0 +1,139 @@
+name: 🦀 CI — Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ─────────────────────────────────────────────────────────
+  # Build and test the library
+  # ─────────────────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.os }} / Rust ${{ matrix.rust }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, beta]
+        include:
+          - os: ubuntu-latest
+            rust: nightly
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (${{ matrix.rust }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.rust }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Build library
+        run: cargo build --workspace --verbose
+
+      - name: Run tests
+        run: cargo test --workspace --verbose
+
+      - name: Run clippy
+        if: matrix.rust == 'stable'
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Check formatting
+        if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
+        run: cargo fmt --all -- --check
+
+  # ─────────────────────────────────────────────────────────
+  # Validate that generated code is in sync with api.json
+  # ─────────────────────────────────────────────────────────
+  validate-codegen:
+    name: 🔍 Validate Generated Code is in Sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Re-run codegen into temp dir
+        run: |
+          mkdir -p /tmp/codegen_out
+          python3 codegen/codegen.py api.json /tmp/codegen_out
+
+      - name: Compare generated files with committed files
+        run: |
+          echo "Checking gen_types.rs..."
+          if ! diff -q tgbotrs/src/gen_types.rs /tmp/codegen_out/gen_types.rs > /dev/null 2>&1; then
+            echo "❌ gen_types.rs is OUT OF SYNC with api.json!"
+            echo "Run: python3 codegen/codegen.py api.json tgbotrs/src/ to regenerate"
+            diff tgbotrs/src/gen_types.rs /tmp/codegen_out/gen_types.rs | head -50
+            exit 1
+          fi
+          echo "✅ gen_types.rs is in sync"
+          
+          echo "Checking gen_methods.rs..."
+          if ! diff -q tgbotrs/src/gen_methods.rs /tmp/codegen_out/gen_methods.rs > /dev/null 2>&1; then
+            echo "❌ gen_methods.rs is OUT OF SYNC with api.json!"
+            echo "Run: python3 codegen/codegen.py api.json tgbotrs/src/ to regenerate"
+            diff tgbotrs/src/gen_methods.rs /tmp/codegen_out/gen_methods.rs | head -50
+            exit 1
+          fi
+          echo "✅ gen_methods.rs is in sync"
+
+      - name: Validate all types and methods are covered
+        run: |
+          python3 .github/scripts/validate_generated.py \
+            api.json \
+            tgbotrs/src/gen_types.rs \
+            tgbotrs/src/gen_methods.rs
+
+  # ─────────────────────────────────────────────────────────
+  # Coverage report
+  # ─────────────────────────────────────────────────────────
+  coverage:
+    name: 📊 API Coverage Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate coverage report
+        run: |
+          python3 .github/scripts/coverage_report.py api.json tgbotrs/src/gen_types.rs tgbotrs/src/gen_methods.rs
+
+      - name: Post to step summary
+        run: |
+          python3 .github/scripts/coverage_report.py api.json tgbotrs/src/gen_types.rs tgbotrs/src/gen_methods.rs --markdown >> $GITHUB_STEP_SUMMARY

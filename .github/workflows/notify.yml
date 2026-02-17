@@ -1,0 +1,152 @@
+name: 🔔 Notify — New Telegram API Version
+
+on:
+  # Runs after auto-regenerate succeeds
+  workflow_run:
+    workflows: ["🔄 Auto-Regenerate from Telegram API Spec"]
+    types: [completed]
+
+  # Also manually triggerable
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  notify:
+    name: 🔔 Create Notification Issue
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download diff report from triggering workflow
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: auto-regenerate.yml
+          name: diff-report
+          path: /tmp
+        continue-on-error: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build notification content
+        id: notify-content
+        run: |
+          python3 - << 'EOF'
+          import json, os, sys
+          from pathlib import Path
+
+          try:
+              report = json.load(open('/tmp/diff_report.json'))
+          except:
+              # No diff report, exit gracefully
+              print("No diff report found, skipping notification")
+              sys.exit(0)
+
+          old_v = report.get('old_version', 'unknown')
+          new_v = report.get('new_version', 'unknown')
+          new_d = report.get('new_date', '')
+          
+          added_types = report.get('added_types', [])
+          removed_types = report.get('removed_types', [])
+          added_methods = report.get('added_methods', [])
+          removed_methods = report.get('removed_methods', [])
+          changed_types = report.get('changed_types', {})
+          changed_methods = report.get('changed_methods', {})
+
+          def fmt_list(items, limit=20):
+              if not items:
+                  return "_None_"
+              lines = [f"- `{i}`" for i in items[:limit]]
+              if len(items) > limit:
+                  lines.append(f"- ...and {len(items)-limit} more")
+              return "\n".join(lines)
+
+          title = f"🤖 Telegram Bot API updated: {old_v} → {new_v}"
+          
+          body = f"""## Telegram Bot API Update: `{old_v}` → `{new_v}`
+
+          **Released:** {new_d}  
+          **Changelog:** [core.telegram.org/bots/api#recent-changes](https://core.telegram.org/bots/api#recent-changes)  
+          **Auto-PR:** A pull request has been automatically opened with regenerated code.
+
+          ---
+
+          ### ✅ New Types ({len(added_types)})
+          {fmt_list(added_types)}
+
+          ### ❌ Removed Types ({len(removed_types)})
+          {fmt_list(removed_types)}
+
+          ### ✅ New Methods ({len(added_methods)})
+          {fmt_list(added_methods)}
+
+          ### ❌ Removed Methods ({len(removed_methods)})
+          {fmt_list(removed_methods)}
+
+          ### 🔄 Changed Types ({len(changed_types)})
+          """
+
+          for name, changes in list(changed_types.items())[:15]:
+              body += f"\n**`{name}`**\n"
+              for field, change in changes.items():
+                  body += f"- `{field}`: {change}\n"
+
+          body += f"\n### 🔄 Changed Methods ({len(changed_methods)})\n"
+          for name, changes in list(changed_methods.items())[:15]:
+              body += f"\n**`{name}`**\n"
+              for field, change in changes.items():
+                  body += f"- `{field}`: {change}\n"
+
+          body += f"""
+          ---
+
+          > **Action required:** Review and merge the auto-generated PR.  
+          > If the changes include breaking API changes, a manual review is recommended before merging.
+
+          _This issue was created automatically by the [auto-regenerate](.github/workflows/auto-regenerate.yml) workflow._
+          """
+
+          with open('/tmp/issue_title.txt', 'w') as f:
+              f.write(title)
+          with open('/tmp/issue_body.md', 'w') as f:
+              f.write(body)
+
+          print(f"Issue ready: {title}")
+          EOF
+
+      - name: Close old bot-api-update issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'bot-api-notification',
+              state: 'open',
+            });
+            for (const issue of issues.data) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+              });
+            }
+
+      - name: Create notification issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title-from-file: /tmp/issue_title.txt
+          content-filepath: /tmp/issue_body.md
+          labels: |
+            bot-api-notification
+            bot-api-update
+            auto-generated

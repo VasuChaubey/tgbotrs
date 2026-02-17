@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "tgbotrs",
+    "codegen",
+]
+resolver = "2"
