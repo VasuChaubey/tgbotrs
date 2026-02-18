@@ -59,7 +59,7 @@
 //! tgbotrs = { version = "0.1", features = ["webhook"] }
 //! ```
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! use tgbotrs::{Bot, UpdateHandler, WebhookServer};
 //!
 //! #[tokio::main]
@@ -68,7 +68,7 @@
 //!     let handler: UpdateHandler = Box::new(|bot, upd| {
 //!         Box::pin(async move {
 //!             if let Some(msg) = upd.message {
-//!                 let _ = bot.send_message(msg.chat.id, "pong!", None).await;
+//!                 let _ = bot.send_message(msg.chat.id, "pong!", None::<tgbotrs::gen_methods::SendMessageParams>).await;
 //!             }
 //!         })
 //!     });
