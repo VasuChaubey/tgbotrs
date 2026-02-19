@@ -1,6 +1,6 @@
 ## 📋 Description
 
-<!-- Describe your changes clearly. What does this PR do and why? -->
+<!-- Describe your changes clearly. -->
 
 ## 🔗 Related Issue
 
@@ -10,7 +10,7 @@ Closes #<!-- issue number -->
 
 - [ ] 🐛 Bug fix
 - [ ] ✨ New feature
-- [ ] 🔧 Codegen / codegen.py improvement
+- [ ] 🔧 Codegen improvement
 - [ ] 📖 Documentation update
 - [ ] 🤖 Auto-generated API update (bot-api-update)
 - [ ] Other: ___
@@ -19,25 +19,16 @@ Closes #<!-- issue number -->
 
 - [ ] `cargo build --workspace` passes
 - [ ] `cargo test --workspace` passes
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes
+- [ ] `cargo clippy --workspace --all-targets` passes (no new warnings)
 - [ ] `cargo fmt --all -- --check` passes
-- [ ] If `codegen.py` was changed: pulled latest spec and re-ran codegen
-  ```sh
-  curl -sSf https://raw.githubusercontent.com/tgapis/x/data/botapi.json -o api.json
-  python3 codegen/codegen.py api.json tgbotrs/src/
-  ```
-- [ ] If `codegen.py` was changed: validation passes
-  ```sh
-  python3 .github/scripts/validate_generated.py \
-    api.json tgbotrs/src/gen_types.rs tgbotrs/src/gen_methods.rs
-  ```
-- [ ] `gen_types.rs` and `gen_methods.rs` were **not** edited manually — only via `codegen.py`
+- [ ] If codegen was changed: `python3 codegen/codegen.py api.json tgbotrs/src/` was re-run
+- [ ] If codegen was changed: `python3 .github/scripts/validate_generated.py api.json tgbotrs/src/gen_types.rs tgbotrs/src/gen_methods.rs` passes
 - [ ] Documentation updated if needed
 
 ## 🔍 Test Plan
 
-<!-- How did you test these changes? What cases did you cover? -->
+<!-- How did you test these changes? -->
 
 ## 📸 Screenshots / Output (if applicable)
 
-<!-- Any relevant output, before/after comparisons, etc. -->
+<!-- Any relevant output, before/after, etc. -->

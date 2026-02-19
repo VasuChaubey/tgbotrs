@@ -8,9 +8,9 @@ Usage:
                            <title_output.txt> <body_output.md>
 """
 
+import datetime
 import json
 import sys
-from datetime import datetime
 
 
 def emoji_for_count(count):
@@ -69,14 +69,14 @@ def main():
     is_breaking = bool(removed_types or removed_methods)
     breaking_label = "⚠️ BREAKING" if is_breaking else "✨"
 
-    # Build title
-    title = f"🤖 {breaking_label} Bot API {old_v} → {new_v} — Auto-regenerated"
+    # Build title — old_v/new_v already contain "Bot API X.X", don't prepend again
+    title = f"🤖 {breaking_label} {old_v} → {new_v} — Auto-regenerated"
     with open(title_out, "w") as f:
         f.write(title)
 
     # Build body
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-    spec_url = f"https://github.com/PaulSonOfLars/telegram-bot-api-spec/commit/{commit}"
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    spec_url = f"https://github.com/tgapis/x/commit/{commit}"
     changelog_url = "https://core.telegram.org/bots/api#recent-changes"
 
     body = f"""## 🤖 Telegram Bot API Update: `{old_v}` → `{new_v}`
